@@ -1,0 +1,19 @@
+FROM golang:1.25
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+RUN go mod tidy
+
+COPY . .
+
+COPY .env .env
+
+RUN mkdir -p /app/build \
+    && go build -o /app/build/reviewer-service ./cmd/reviewer-service \
+    && go clean -cache -modcache
+
+EXPOSE 8080
+
+CMD ["/app/build/reviewer-service"]
