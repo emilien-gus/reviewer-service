@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pvz/internal/data"
-	"pvz/internal/handlers"
 	"syscall"
 	"time"
 
