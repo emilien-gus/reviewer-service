@@ -17,6 +17,6 @@ CREATE TABLE pull_requests (
     author_id VARCHAR(255) REFERENCES users(id),
     status VARCHAR(50) DEFAULT 'OPEN',
     assigned_reviewers JSONB,
-    created_at TIMESTAMP DEFAULT NOW(),
-    merged_at TIMESTAMP
+    merged_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
 );
