@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	data "reviewer-service/internal/database"
+	"reviewer-service/internal/handlers"
 	"syscall"
 	"time"
 

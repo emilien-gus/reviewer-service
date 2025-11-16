@@ -20,7 +20,7 @@ func NewUserHandler(s services.UserServiceInterface) *UserHandler {
 
 type setActiveRequest struct {
 	UserID   string `json:"user_id" binding:"required"`
-	IsActive bool   `json:"is_active" binding:"required"`
+	IsActive *bool  `json:"is_active" binding:"required"`
 }
 
 func (h *UserHandler) SetIsActive(c *gin.Context) {
@@ -35,7 +35,7 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 	user, err := h.UserService.SetIsActive(
 		c.Request.Context(),
 		req.UserID,
-		req.IsActive,
+		*req.IsActive,
 	)
 
 	if err != nil {
@@ -51,4 +51,31 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) GetReviews(c *gin.Context) {
+	userID := c.Query("user_id")
+	var errResponse models.ErrorResponse
+
+	if userID == "" {
+		errResponse = models.NewErrorResponse(models.CodeInvalidRequest, "user_id is required")
+		c.JSON(http.StatusBadRequest, errResponse)
+		return
+	}
+
+	reviews, err := h.UserService.GetReviews(
+		c.Request.Context(),
+		userID,
+	)
+
+	if err != nil {
+		errResp := models.NewErrorResponse(models.CodeInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, errResp)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user_id":       userID,
+		"pull_requests": reviews,
+	})
 }

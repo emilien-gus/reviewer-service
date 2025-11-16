@@ -9,6 +9,7 @@ import (
 type PullRequestServiceInterface interface {
 	CreatePullRequest(ctx context.Context, prID string, prName string, authorID string) (*models.PullRequest, error)
 	SetMergedStatus(ctx context.Context, prid string) (*models.PullRequest, error)
+	ReassignReviewer(ctx context.Context, prID string, oldReviewer string) (*models.PullRequest, string, error)
 }
 
 type PullRequestService struct {
@@ -25,4 +26,8 @@ func (s *PullRequestService) CreatePullRequest(ctx context.Context, prID string,
 
 func (s *PullRequestService) SetMergedStatus(ctx context.Context, prid string) (*models.PullRequest, error) {
 	return s.PullRequestRepo.SetMerged(ctx, prid)
+}
+
+func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID string, oldReviewer string) (*models.PullRequest, string, error) {
+	return s.PullRequestRepo.ReassignReviewer(ctx, prID, oldReviewer)
 }

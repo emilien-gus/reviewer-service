@@ -9,8 +9,10 @@ import (
 	"github.com/lib/pq"
 )
 
-var ErrTeamExists = errors.New(models.CodeTeamExists)
-var ErrTeamNotFound = errors.New("team not found")
+var (
+	ErrTeamExists   = errors.New(models.CodeTeamExists)
+	ErrTeamNotFound = errors.New("team not found")
+)
 
 type TeamRepositoryInterface interface {
 	Create(ctx context.Context, team *models.Team) (*models.Team, error)
@@ -47,11 +49,12 @@ func (r *TeamRepository) Create(ctx context.Context, team *models.Team) (*models
 	}
 
 	stmt, err := tx.PrepareContext(ctx, `
-        INSERT INTO users (id, username, team_name) 
-        VALUES ($1, $2, $3)
-        ON CONFLICT (user_id) DO UPDATE SET 
-            username = EXCLUDED.username,
-            team_name = EXCLUDED.team_name,
+        INSERT INTO users (id, username, team_name, is_active) 
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE SET 
+                username = EXCLUDED.username,
+                team_name = EXCLUDED.team_name,
+                is_active = EXCLUDED.is_active
     `)
 
 	if err != nil {
@@ -64,6 +67,8 @@ func (r *TeamRepository) Create(ctx context.Context, team *models.Team) (*models
 		_, err = stmt.ExecContext(ctx,
 			member.ID,
 			member.Username,
+			team.Name,
+			member.IsActive,
 		)
 		if err != nil {
 			return nil, err
@@ -79,10 +84,10 @@ func (r *TeamRepository) Create(ctx context.Context, team *models.Team) (*models
 
 func (r *TeamRepository) Get(ctx context.Context, teamName string) (*models.Team, error) {
 	rows, err := r.db.QueryContext(ctx, `
-        SELECT t.team_name, u.user_id, u.username, u.is_active
-        FROM teams t
-        LEFT JOIN users u ON t.team_name = u.team_name
-        WHERE t.team_name = $1
+        SELECT t.name, u.id, u.username, u.is_active
+		FROM teams t
+		LEFT JOIN users u ON t.name = u.team_name
+		WHERE t.name = $1
     `, teamName)
 
 	if err != nil {

@@ -11,6 +11,7 @@ var ErrUserNotFound = errors.New("user not found")
 
 type UserRepositoryInterface interface {
 	SetIsActive(ctx context.Context, userID string, isActive bool) (*models.User, error)
+	GetReviews(ctx context.Context, userID string) (*[]models.PullRequest, error)
 }
 
 type UserRepository struct {
@@ -40,4 +41,34 @@ func (r *UserRepository) SetIsActive(ctx context.Context, userID string, isActiv
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepository) GetReviews(ctx context.Context, userID string) (*[]models.PullRequest, error) {
+	rows, err := r.db.QueryContext(ctx, `
+        SELECT id, name, author_id, status
+        FROM pull_requests
+        WHERE assigned_reviewers @> $1::jsonb
+    `, `["`+userID+`"]`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reviews []models.PullRequest
+
+	for rows.Next() {
+		var pr models.PullRequest
+		err := rows.Scan(&pr.ID, &pr.Name, &pr.AuthorID, &pr.Status)
+		if err != nil {
+			return nil, err
+		}
+
+		reviews = append(reviews, pr)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &reviews, nil
 }
