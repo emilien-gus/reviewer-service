@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 	"reviewer-service/internal/models"
-	"reviewer-service/internal/repository"
 	"reviewer-service/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -28,24 +26,13 @@ func (h *PullRequestHandler) CreatePR(c *gin.Context) {
 	var req createPRRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errorResp := models.NewErrorResponse(models.CodeInvalidRequest, err.Error())
-		c.JSON(http.StatusBadRequest, errorResp)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, err.Error())
 		return
 	}
 
 	pr, err := h.service.CreatePullRequest(c.Request.Context(), req.ID, req.Name, req.AuthorID)
 	if err != nil {
-		switch {
-		case errors.Is(err, repository.ErrPullRequestExists):
-			errorResp := models.NewErrorResponse(models.CodePRExists, "PR id already exists")
-			c.JSON(http.StatusConflict, errorResp)
-		case errors.Is(err, repository.ErrTeamNotFound) || errors.Is(err, repository.ErrUserNotFound):
-			errorResp := models.NewErrorResponse(models.CodeNotFound, err.Error())
-			c.JSON(http.StatusNotFound, errorResp)
-		default:
-			errorResp := models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-			c.JSON(http.StatusInternalServerError, errorResp)
-		}
+		handleError(c, err)
 		return
 	}
 
@@ -58,22 +45,13 @@ func (h *PullRequestHandler) SetMergedInPR(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errorResp := models.NewErrorResponse(models.CodeInvalidRequest, err.Error())
-		c.JSON(http.StatusBadRequest, errorResp)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, err.Error())
 		return
 	}
 
 	pr, err := h.service.SetMergedStatus(c.Request.Context(), req.ID)
 	if err != nil {
-		if errors.Is(err, repository.ErrPullRequestNotFound) {
-			errorResp := models.NewErrorResponse(models.CodeNotFound, err.Error())
-			c.JSON(http.StatusNotFound, errorResp)
-			return
-		}
-
-		errorResp := models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-		c.JSON(http.StatusInternalServerError, errorResp)
-		return
+		handleError(c, err)
 	}
 
 	c.JSON(http.StatusOK, pr)
@@ -86,30 +64,13 @@ func (h *PullRequestHandler) ReassignReviewer(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errorResp := models.NewErrorResponse(models.CodeInvalidRequest, err.Error())
-		c.JSON(http.StatusBadRequest, errorResp)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, err.Error())
 		return
 	}
 
 	pr, newReviewer, err := h.service.ReassignReviewer(c.Request.Context(), req.PrID, req.OldUserID)
 	if err != nil {
-		switch {
-		case errors.Is(err, repository.ErrPullRequestNotFound) || errors.Is(err, repository.ErrUserNotFound):
-			errorResp := models.NewErrorResponse(models.CodeNotFound, err.Error())
-			c.JSON(http.StatusNotFound, errorResp)
-		case errors.Is(err, repository.ErrNotAssigned):
-			errorResp := models.NewErrorResponse(models.CodeNotAssigned, "reviewer is not assigned to this PR")
-			c.JSON(http.StatusConflict, errorResp)
-		case errors.Is(err, repository.ErrPRMerged):
-			errorResp := models.NewErrorResponse(models.CodePRMerged, "cannot reassign on merged PR")
-			c.JSON(http.StatusConflict, errorResp)
-		case errors.Is(err, repository.ErrNoCandidate):
-			errorResp := models.NewErrorResponse(models.CodeNoCandidate, "no active replacement candidate in team")
-			c.JSON(http.StatusConflict, errorResp)
-		default:
-			errorResp := models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-			c.JSON(http.StatusInternalServerError, errorResp)
-		}
+		handleError(c, err)
 		return
 	}
 

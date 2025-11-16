@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/lib/pq"
 )
 
 var (
@@ -85,6 +84,7 @@ func (r *PullRequestRepository) Create(ctx context.Context, prID string, prName 
 	insertQuery := `
         INSERT INTO pull_requests (id, name, author_id, assigned_reviewers)
         VALUES ($1, $2, $3, $4)
+    	ON CONFLICT (id) DO NOTHING
         RETURNING id, name, author_id, status, assigned_reviewers, created_at
     `
 	var pr models.PullRequest
@@ -92,10 +92,9 @@ func (r *PullRequestRepository) Create(ctx context.Context, prID string, prName 
 		Scan(&pr.ID, &pr.Name, &pr.AuthorID, &pr.Status, &reviewersJSON, &pr.CreatedAt)
 
 	if err != nil {
-		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrPullRequestExists
 		}
-		return nil, err
 	}
 
 	pr.Reviewers, err = decodeReviewersField(reviewersJSON)

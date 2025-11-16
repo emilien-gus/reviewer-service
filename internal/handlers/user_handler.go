@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 	"reviewer-service/internal/models"
-	"reviewer-service/internal/repository"
 	"reviewer-service/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -25,28 +23,15 @@ type setActiveRequest struct {
 
 func (h *UserHandler) SetIsActive(c *gin.Context) {
 	var req setActiveRequest
-	var errResponse models.ErrorResponse
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errResponse = models.NewErrorResponse(models.CodeInvalidRequest, err.Error())
-		c.JSON(http.StatusBadRequest, errResponse)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, err.Error())
 		return
 	}
 
-	user, err := h.UserService.SetIsActive(
-		c.Request.Context(),
-		req.UserID,
-		*req.IsActive,
-	)
+	user, err := h.UserService.SetIsActive(c.Request.Context(), req.UserID, *req.IsActive)
 
 	if err != nil {
-		if errors.Is(err, repository.ErrUserNotFound) {
-			errResp := models.NewErrorResponse(models.CodeNotFound, err.Error())
-			c.JSON(http.StatusNotFound, errResp)
-			return
-		}
-
-		errResp := models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-		c.JSON(http.StatusInternalServerError, errResp)
+		handleError(c, err)
 		return
 	}
 
@@ -55,22 +40,15 @@ func (h *UserHandler) SetIsActive(c *gin.Context) {
 
 func (h *UserHandler) GetReviews(c *gin.Context) {
 	userID := c.Query("user_id")
-	var errResponse models.ErrorResponse
-
 	if userID == "" {
-		errResponse = models.NewErrorResponse(models.CodeInvalidRequest, "user_id is required")
-		c.JSON(http.StatusBadRequest, errResponse)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, "user_id is required")
 		return
 	}
 
-	reviews, err := h.UserService.GetReviews(
-		c.Request.Context(),
-		userID,
-	)
+	reviews, err := h.UserService.GetReviews(c.Request.Context(), userID)
 
 	if err != nil {
-		errResp := models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-		c.JSON(http.StatusInternalServerError, errResp)
+		handleError(c, err)
 		return
 	}
 

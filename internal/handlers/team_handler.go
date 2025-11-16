@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"errors"
-	"log"
 	"net/http"
 	"reviewer-service/internal/models"
-	"reviewer-service/internal/repository"
 	"reviewer-service/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -21,23 +18,14 @@ func NewTeamHandler(TeamService services.TeamServiceInterface) *TeamHandler {
 
 func (h *TeamHandler) CreateTeam(c *gin.Context) {
 	var req models.Team
-	var errResponce models.ErrorResponse
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errResponce = models.NewErrorResponse(models.CodeInvalidRequest, err.Error())
-		c.JSON(http.StatusBadRequest, errResponce)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, err.Error())
 		return
 	}
-	log.Print(req)
+
 	team, err := h.TeamService.CreateTeam(c.Request.Context(), &req)
 	if err != nil {
-		if errors.Is(repository.ErrTeamExists, err) {
-			errResponce = models.NewErrorResponse(models.CodeTeamExists, req.Name+" already exists")
-			c.JSON(http.StatusBadRequest, errResponce)
-			return
-		}
-
-		errResponce = models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-		c.JSON(http.StatusInternalServerError, errResponce)
+		handleError(c, err)
 		return
 	}
 
@@ -45,25 +33,15 @@ func (h *TeamHandler) CreateTeam(c *gin.Context) {
 }
 
 func (h *TeamHandler) GetTeam(c *gin.Context) {
-	var errResponse models.ErrorResponse
-
 	teamName := c.Query("team_name")
 	if teamName == "" {
-		errResponse = models.NewErrorResponse(models.CodeInvalidRequest, "team_name is required")
-		c.JSON(http.StatusBadRequest, errResponse)
+		handleErrorReponse(c, http.StatusBadRequest, models.CodeInvalidRequest, "team_name is required")
 		return
 	}
 
 	team, err := h.TeamService.GetTeam(c.Request.Context(), teamName)
 	if err != nil {
-		if errors.Is(err, repository.ErrTeamNotFound) {
-			errResponse = models.NewErrorResponse(models.CodeNotFound, err.Error())
-			c.JSON(http.StatusNotFound, errResponse)
-			return
-		}
-
-		errResponse = models.NewErrorResponse(models.CodeInternalServerError, err.Error())
-		c.JSON(http.StatusInternalServerError, errResponse)
+		handleError(c, err)
 		return
 	}
 

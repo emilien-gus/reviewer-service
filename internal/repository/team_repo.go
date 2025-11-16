@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"reviewer-service/internal/models"
-
-	"github.com/lib/pq"
 )
 
 var (
@@ -35,13 +33,16 @@ func (r *TeamRepository) Create(ctx context.Context, team *models.Team) (*models
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, `
-		INSERT INTO teams (name)
-		VALUES ($1)
+	row := r.db.QueryRowContext(ctx, `
+    INSERT INTO teams (name)
+    VALUES ($1)
+    ON CONFLICT (name) DO NOTHING
+    RETURNING name
 	`, team.Name)
 
+	err = row.Scan(&team.Name)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrTeamExists
 		}
 
