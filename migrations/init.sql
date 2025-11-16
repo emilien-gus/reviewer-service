@@ -1,6 +1,5 @@
 CREATE TABLE teams (
     name VARCHAR(255) PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE users (
@@ -8,7 +7,6 @@ CREATE TABLE users (
     username VARCHAR(255) NOT NULL,
     team_name VARCHAR(255) REFERENCES teams(name),
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE pull_requests (
@@ -18,5 +16,5 @@ CREATE TABLE pull_requests (
     status VARCHAR(50) DEFAULT 'OPEN',
     assigned_reviewers JSONB,
     merged_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW,
 );
