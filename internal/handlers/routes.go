@@ -25,7 +25,7 @@ func SetupRoutes(db *sql.DB, r *gin.Engine) {
 	prHandler := NewPullRequestHandler(prService)
 
 	// Группа API с аутентификацией
-	api := r.Group("/api")
+	api := r.Group("/")
 	{
 		// Teams
 		api.POST("/team/add", teamHandler.CreateTeam)
